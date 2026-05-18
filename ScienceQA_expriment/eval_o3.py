@@ -187,6 +187,8 @@ def main():
                         help='ood_model')
     parser.add_argument('--ood_type', type=str, default="biology",
                         help='ood type')
+    parser.add_argument('--restore_tasks', nargs='*', type=int, default=[], 
+                    help='복원(OOD 패스)하고 싶은 지식의 인덱스 목록 (예: 1 3)')
     # biology
     parser.add_argument('--ood_setting', type=str, default="c",
                         help='ood setting')
@@ -338,6 +340,9 @@ def main():
         max_ood = 0
 
         for i in range((len(ood_weights))):
+            if i in args.restore_tasks:
+								continue
+                
             mah_score = ood_models[i].get_unsup_Mah_score_s(ood_input, ood_mean_lists[i], ood_precision_lists[i], ood_fea_lists[i])[:, 1:]
             test_score = ood_clrs[i].score_samples(mah_score)
             w_ood = obtain_weights(test_score, ood_gmm_w_cls[i], ood_x0[i])
