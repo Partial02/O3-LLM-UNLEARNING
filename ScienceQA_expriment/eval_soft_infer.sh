@@ -8,12 +8,7 @@ do
     do
       OUTPUT_1="./SCALE_${SCALE}_seed_${SEED}_o_unlearn_lora_${LABEL_K}_checkpoints_5/lora_${LABEL_K}_random"
       TYPE=""
-      ## revised: 생물학 only v.s. 4종을 모두 받을 수 있도록 주석으로 처리
-      DATASETS=("biology")
-      # DATASETS=("biology" "physics" "chemistry" "economics")
-
-      # for UNLEAN_D in "biology" "physics" "chemistry"
-      for UNLEAN_D in "${DATASETS[@]}"
+      for UNLEAN_D in "biology" "physics" "chemistry"
       do
 
         OUTPUT_1+="_${UNLEAN_D}_${LABEL_K}"
