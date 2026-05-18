@@ -177,16 +177,22 @@ def main():
     # ./data/scienceqa_standard_5/scienceqa_biology_train_std.json
     # ./data/scienceqa_SD_5/scienceqa_biology_physics_test_SD.json
 
-    parser.add_argument('--test_dataset', type=str, default="./data/scienceqa_SD_5/scienceqa_biology_test_SD.json",
-                        help='test_dataset')
+	## revised: 데이터셋을 리스트로 받을 수 있도록 교체
+    # parser.add_argument('--test_dataset', type=str, default="./data/scienceqa_SD_5/scienceqa_biology_test_SD.json",
+    #                     help='test_dataset')
+	parser.add_argument('--test_dataset', nargs='+', default=["./data/scienceqa_SD_5/scienceqa_biology_test_SD.json"],
+						help='test_dataset')
     parser.add_argument('--base_model', type=str, default="gcyzsl/O3_LLAMA2_ScienceQA", help='base_model')
     parser.add_argument('--ood_base_model', type=str, default="roberta-large", help='base_model')
-    parser.add_argument('--lora_weights', type=str, default= "./SCALE_0.1_seed_1_o_unlearn_lora_force_checkpoints_5/lora_force_random_biology_force",
-                        help='lora_model')
+    # parser.add_argument('--lora_weights', type=str, default= "./SCALE_0.1_seed_1_o_unlearn_lora_force_checkpoints_5/lora_force_random_biology_force",
+    #                     help='lora_model')
+	parser.add_argument('--lora_weights', nargs='+', type=str, default=["./SCALE_0.1_seed_1_o_unlearn_lora_force_checkpoints_5/lora_force_random_biology_force"],
+						help='lora_model')
     parser.add_argument('--ood_weights', type=str, default= "./ood_checkpoints_scienceqa_1/",#"./ood_checkpoints_new_0/",  # o: 6.05 2.02
                         help='ood_model')
-    parser.add_argument('--ood_type', type=str, default="biology",
-                        help='ood type')
+    # parser.add_argument('--ood_type', type=str, default="biology",
+    #                     help='ood type')
+	parser.add_argument('--ood_type', nargs='+', default=["biology"], help='ood type')
     parser.add_argument('--restore_tasks', nargs='*', type=int, default=[], 
                     help='복원(OOD 패스)하고 싶은 지식의 인덱스 목록 (예: 1 3)')
     # biology
@@ -218,17 +224,32 @@ def main():
     print(args.ood_setting_name)
 
     ood_weights = []
-    for i in ood_types:  # "biology", "physics", "chemistry"
+    for i in ood_types:  # "biology", "physics", "chemistry", "economics"
         o_p = args.ood_weights + f"{ood_setting_names}_{i}_ood_{ood_setting_names}"
         ood_weights.append(o_p)
     ood_type = "ocsvm"
 
-    path = "/".join(lora_weight.split("/")[:-1])
+	## revised: 리스트로 들어온 LoRA를 마지막 경로를 기준으로 OOD Type과 폴더/파일명에 작성
+    # path = "/".join(lora_weight.split("/")[:-1])
+	base_lora = args.lora_weights[-1] if isinstance(args.lora_weights, list) else args.lora_weights
+    path = "/".join(base_lora.split("/")[:-1])
     if not os.path.exists(path):
         os.mkdir(path)
-    result_file = path + "/test_noretain_{}_seed{}_oodlora_{}_{}".format(ood_setting,str(args.seed), lora_weight.split("/")[-1],
-                                                args.test_dataset.split("/")[-1])
-    print(result_file)
+	# ood_type이 리스트일 경우 이름이 너무 길어지지 않게 join
+	ood_type_str = "_".join(args.ood_type) if isinstance(args.ood_type, list) else args.ood_type
+	
+	for test_file in args.test_dataset:
+        result_file = path + "/test_noretain_{}_seed{}_oodtype_{}_lora_{}_{}".format(
+            args.ood_setting, 
+            str(args.seed), 
+            ood_type_str,
+            base_lora.split("/")[-1], 
+            test_file.split("/")[-1]
+        )
+        print(f"-> Result will be saved to: {result_file}")
+    # result_file = path + "/test_noretain_{}_seed{}_oodlora_{}_{}".format(ood_setting,str(args.seed), lora_weight.split("/")[-1],
+    #                                             args.test_dataset.split("/")[-1])
+    # print(result_file)
 
 
     load_8bit = False
@@ -291,14 +312,23 @@ def main():
     ood_fea_lists = []
     ood_gmm_w_cls = []
 
-    for i in ood_weights:
-        roberta_path = i + f"_roberta_{ood_type}"
-        ocsvm_path = i + f"_{ood_type}.pkl"
-        threshold_path = i + f"_threshold_{ood_type}.json"
-        mean_list_path = i + f"_mean_list_{ood_type}.pt"
-        precision_list_path = i + f"_precision_list_{ood_type}.pt"
-        fea_list_path = i + f"_fea_list_{ood_type}.pt"
-        gmm_w_path = i + f"_gmm_w_{ood_type}.pkl"
+	## revised: 경로 1개당 과목명 1개를 짝지어서 루프를 도는 것이 깔끔함
+	for i, current_ood in zip(ood_weights, args.ood_type):
+        roberta_path = i + f"_roberta_{current_ood}"
+        ocsvm_path = i + f"_{current_ood}.pkl"
+        threshold_path = i + f"_threshold_{current_ood}.json"
+        mean_list_path = i + f"_mean_list_{current_ood}.pt"
+        precision_list_path = i + f"_precision_list_{current_ood}.pt"
+        fea_list_path = i + f"_fea_list_{current_ood}.pt"
+        gmm_w_path = i + f"_gmm_w_{current_ood}.pkl"
+    # for i in ood_weights:
+    #     roberta_path = i + f"_roberta_{ood_type}"
+    #     ocsvm_path = i + f"_{ood_type}.pkl"
+    #     threshold_path = i + f"_threshold_{ood_type}.json"
+    #     mean_list_path = i + f"_mean_list_{ood_type}.pt"
+    #     precision_list_path = i + f"_precision_list_{ood_type}.pt"
+    #     fea_list_path = i + f"_fea_list_{ood_type}.pt"
+    #     gmm_w_path = i + f"_gmm_w_{ood_type}.pkl"
 
 
         ood_models.append(RobertaForSelector_inference(ood_base_model, lora_path=roberta_path, projection_dim=100).to(device))
@@ -341,7 +371,7 @@ def main():
 
         for i in range((len(ood_weights))):
             if i in args.restore_tasks:
-								continue
+				continue
                 
             mah_score = ood_models[i].get_unsup_Mah_score_s(ood_input, ood_mean_lists[i], ood_precision_lists[i], ood_fea_lists[i])[:, 1:]
             test_score = ood_clrs[i].score_samples(mah_score)
