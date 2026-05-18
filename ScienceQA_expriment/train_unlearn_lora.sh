@@ -9,13 +9,7 @@ do
      LORA_W=""
      ADAPTER=""
      TYPE=""
-     
-     ## revised: 생물학 only v.s. 4종을 모두 받을 수 있도록 주석으로 처리
-     DATASETS=("biology")
-     # DATASETS=("biology" "physics" "chemistry" "economics")
-     
-     # for UNLEAN_D in "biology" "physics" "chemistry" "economics" "earth-science"
-     for UNLEAN_D in "${DATASETS[@]}"
+     for UNLEAN_D in "biology" "physics" "chemistry" "economics" "earth-science"
      do
        DATAPATH_1="./data/scienceqa_random_${LABEL_K}_5/scienceqa_${UNLEAN_D}_train_random_${LABEL_K}.json"
        OUTPUT_1+="_${UNLEAN_D}_${LABEL_K}"
