@@ -105,8 +105,11 @@ def main():
     # ./data/scienceqa_SD_5/scienceqa_biology_test_SD.json 92
     # ./data/scienceqa_SD/scienceqa_biology_test_SD.json
     # "/tank/local/cgo5577/MoLA_f/datasets/CL_biology_test_scienceq_all.json",
-    parser.add_argument('--test_dataset', type=str, default="./data/scienceqa_RD_5/scienceqa_not_biology_test_RD.json",
+
+    ## revised: 단일 biology 및 4종을 모두 받을 수 있도록 리스트 처리
+    # parser.add_argument('--test_dataset', type=str, default="./data/scienceqa_RD_5/scienceqa_not_biology_test_RD.json",
                         help='test_dataset')
+    parser.add_argument('--test_dataset', nargs='+', default=["./data/scienceqa_RD_5/scienceqa_not_biology_test_RD.json"], help='test_dataset')
     parser.add_argument('--base_model', type=str, default="./llama2_qaall", help='base_model')
     # ./lora_bio_random_test_force_retain ./lora_bio_random_test_k_l
     # lora_bio_random_test_o lora_bio_random_test_oo
@@ -130,7 +133,8 @@ def main():
     # Parsing arguments
     args = parser.parse_args()
     set_seed(args.seed)
-    data_a = json.load(open(args.test_dataset))
+    ## revised: 테스트셋을 하나밖에 못 받는 기존 코드는 주석 처리
+    # data_a = json.load(open(args.test_dataset))
     base_model = args.base_model
     lora_weights = args.lora_weights
     max_batch_size = args.max_batch_size
@@ -143,8 +147,9 @@ def main():
     path = "/".join(lora_weights.split("/")[:-1])
     if not os.path.exists(path):
         os.mkdir(path)
-    result_file = path + "/seed{}_{}_{}".format(str(args.seed), lora_weights.split("/")[-1], args.test_dataset.split("/")[-1])
-    print(result_file)
+    ## revised: 테스트셋을 하나만 처리했던 경로 표기는 주석 처리
+    # result_file = path + "/seed{}_{}_{}".format(str(args.seed), lora_weights.split("/")[-1], args.test_dataset.split("/")[-1])
+    # print(result_file)
 
     tokenizer = LlamaTokenizer.from_pretrained(base_model, padding_side='left')
     if device == "cuda":
@@ -199,86 +204,93 @@ def main():
 
     prompter = Prompter(template_name="alpaca")
 
+    ## revised: 단일 biology 및 4종을 모두 받을 수 있도록 새로 for문을 만들어서 처리
+    for test_file in args.test_dataset: 
+        print(f"Processing dataset: {test_file}")
+        data_a = json.load(open(test_file, 'r', encoding='utf-8'))
+        result_file = path + "/seed{}_{}_{}".format(str(args.seed), lora_weights.split("/")[-1], test_file.split("/")[-1])
 
-    max_new_tokens = 128
-    save_every = 200
-
-    correct = 0
-    results = []
-    outputs = []
-    gt = []
-    options = ["A", "B", "C", "D", "E"]
-
-    for start_idx in tqdm(range(0, len(data_a), max_batch_size)):
-        end_idx = min(start_idx + max_batch_size, len(data_a))
-        batch = data_a[start_idx:end_idx]
-
-        answers = [str(example["answer"]) for example in batch]
-        # choices = data["choices"]
-        # answer = data["answer"]  # 0, 1, ..., 4
-        # label = args.options[answer]  # 'A', ..., 'E'
-        # print(answers)
-        # generate prompt
-        prompts = [prompter.generate_prompt(example['instruction'], example['input']) for example in batch]
-        # prompt = prompter.generate_prompt(data['instruction'], data['input'])
-        # print(prompts)
-
-        # generate prediction
-
-        inputs = tokenizer(prompts, padding=True, return_tensors="pt")
-        input_ids = inputs["input_ids"].to(device)
-
-
-        with torch.no_grad():
-            generation_output = model.generate(
-                input_ids=input_ids,
-                # generation_config=generation_config,
-                return_dict_in_generate=True,
-                output_scores=True,
-                max_new_tokens=max_new_tokens,
-            )
-        s = generation_output.sequences
-        output = tokenizer.batch_decode(s)
-        output = [prompter.get_response(otp) for otp in output]
-
-        # extract the answer
-        print(output)
-        # pattern = re.compile(r'The anwser to the question is (\d+):*')
-        pattern = re.compile(r'The answer is ([A-Z]).')
-        res = [pattern.findall(otp) for otp in output]
-        print(res)
-        pred = []
-        for r_i in range(len(res)):
-            if len(res[r_i]) == 1:
-                answer = res[r_i][0]  # 'A', 'B', ...
-            else:
-                answer = "FAILED"
-                print(res[r_i])
-            pred.append(answer)
-            results.append(res[r_i])
-            outputs.append(output[r_i])
-            gt.append(answers[r_i])
-
-            if str(answer) == str(answers[r_i]):
-                correct += 1
-                print('correct:', str(answer), str(answers[r_i]))
-            else:
-                print('gt-ans:', str(answer), str(answers[r_i]))
-
-
-        acc = correct / len(results) * 100
-
-        if end_idx % save_every == 0 or end_idx == len(data_a):
-            print(f"{len(results)}/{len(data_a)}, correct: {correct}, acc: {round(acc, 2)}%, saving to {result_file}")
-            data = {}
-            data['acc'] = acc
-            data['correct'] = correct
-            data['len'] = len(results)
-            data['results'] = results
-            data['outputs'] = outputs
-            with open(result_file, 'w') as f:
-                json.dump(data, f, indent=2, separators=(',', ': '))
-
+        ## 이하는 기존의 로직. 한 칸씩 들여씀
+        max_new_tokens = 128
+        save_every = 200
+    
+        correct = 0
+        results = []
+        outputs = []
+        gt = []
+        options = ["A", "B", "C", "D", "E"]
+    
+        for start_idx in tqdm(range(0, len(data_a), max_batch_size)):
+            end_idx = min(start_idx + max_batch_size, len(data_a))
+            batch = data_a[start_idx:end_idx]
+    
+            answers = [str(example["answer"]) for example in batch]
+            # choices = data["choices"]
+            # answer = data["answer"]  # 0, 1, ..., 4
+            # label = args.options[answer]  # 'A', ..., 'E'
+            # print(answers)
+            # generate prompt
+            prompts = [prompter.generate_prompt(example['instruction'], example['input']) for example in batch]
+            # prompt = prompter.generate_prompt(data['instruction'], data['input'])
+            # print(prompts)
+    
+            # generate prediction
+    
+            inputs = tokenizer(prompts, padding=True, return_tensors="pt")
+            input_ids = inputs["input_ids"].to(device)
+    
+    
+            with torch.no_grad():
+                generation_output = model.generate(
+                    input_ids=input_ids,
+                    # generation_config=generation_config,
+                    return_dict_in_generate=True,
+                    output_scores=True,
+                    max_new_tokens=max_new_tokens,
+                )
+            s = generation_output.sequences
+            output = tokenizer.batch_decode(s)
+            output = [prompter.get_response(otp) for otp in output]
+    
+            # extract the answer
+            print(output)
+            # pattern = re.compile(r'The anwser to the question is (\d+):*')
+            pattern = re.compile(r'The answer is ([A-Z]).')
+            res = [pattern.findall(otp) for otp in output]
+            print(res)
+            pred = []
+            for r_i in range(len(res)):
+                if len(res[r_i]) == 1:
+                    answer = res[r_i][0]  # 'A', 'B', ...
+                else:
+                    answer = "FAILED"
+                    print(res[r_i])
+                pred.append(answer)
+                results.append(res[r_i])
+                outputs.append(output[r_i])
+                gt.append(answers[r_i])
+    
+                if str(answer) == str(answers[r_i]):
+                    correct += 1
+                    print('correct:', str(answer), str(answers[r_i]))
+                else:
+                    print('gt-ans:', str(answer), str(answers[r_i]))
+    
+    
+            acc = correct / len(results) * 100
+    
+            if end_idx % save_every == 0 or end_idx == len(data_a):
+                print(f"{len(results)}/{len(data_a)}, correct: {correct}, acc: {round(acc, 2)}%, saving to {result_file}")
+                data = {}
+                data['acc'] = acc
+                data['correct'] = correct
+                data['len'] = len(results)
+                data['results'] = results
+                data['outputs'] = outputs
+                with open(result_file, 'w') as f:
+                    json.dump(data, f, indent=2, separators=(',', ': '))
+                    
+    ## 들여쓰기 종료    
 
 if __name__ == "__main__":
     main()
