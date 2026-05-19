@@ -11,6 +11,7 @@ do
      TYPE=""
      for UNLEAN_D in "biology"
      do
+       echo "[DEBUG] STAGE=LORA-UNLEARN | SEED=${SEED} | DOMAIN=${UNLEAN_D}"
        DATAPATH_1="./data/scienceqa_random_${LABEL_K}_5/scienceqa_${UNLEAN_D}_train_random_${LABEL_K}.json"
        OUTPUT_1+="_${UNLEAN_D}_${LABEL_K}"
        python train_unlearn_lora_o.py \

@@ -10,6 +10,7 @@ do
       TYPE=""
       for UNLEAN_D in "biology"
       do
+        echo "[DEBUG] STAGE=SOFT-INFER | SEED=${SEED} | DOMAIN=${UNLEAN_D}"
 
         OUTPUT_1+="_${UNLEAN_D}_${LABEL_K}"
         TYPE+="_${UNLEAN_D}"

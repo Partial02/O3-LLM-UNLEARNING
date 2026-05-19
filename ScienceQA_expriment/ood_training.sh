@@ -3,6 +3,7 @@ do
   TYPE=""
   for UNLEAN_D in "biology"
   do
+      echo "[DEBUG] STAGE=OOD-RUN | SEED=${SEED} | DOMAIN=${UNLEAN_D}"
       TYPE+="_${UNLEAN_D}"
       OODPATH_1="./data/scienceqa_RD_5/scienceqa_not${TYPE}"
       python run_ood.py \
