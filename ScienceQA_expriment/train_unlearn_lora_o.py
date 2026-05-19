@@ -87,7 +87,7 @@ def train(
         train_on_inputs: bool = True,  # if False, masks out inputs in loss
         add_eos_token: bool = True,
         group_by_length: bool = True,  # faster, but produces an odd training loss curve
-        load_in_8bit: bool = False,
+        load_in_8bit: bool = True, # 자꾸 메모리가 터져서 켜야할 듯
 
         # wandb params
         wandb_project: str = "",
