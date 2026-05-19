@@ -503,7 +503,14 @@ class Linear(nn.Module, LoraLayer):
                 if active_adapter not in self.lora_A.keys():
                     continue
                 for i in range(len(o_lora_layer)):
-                    o_a = torch.matmul(o_lora_layer[i], torch.transpose(self.lora_A[active_adapter].weight, 0, 1))
+                    prev_lora_A = o_lora_layer[i].to(
+                        device=self.lora_A[active_adapter].weight.device,
+                        dtype=self.lora_A[active_adapter].weight.dtype,
+                    )
+                    o_a = torch.matmul(
+                        prev_lora_A,
+                        torch.transpose(self.lora_A[active_adapter].weight, 0, 1),
+                    )
                     o_a = torch.square(o_a)
                     o_a = torch.sum(o_a)
                     o_loss = o_loss + o_a
