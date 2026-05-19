@@ -19,9 +19,9 @@ do
             --data_path ${DATAPATH_1} \
             --output_dir ${OUTPUT_1} \
             --seed ${SEED} \
-            --batch_size 128 \
-            --micro_batch_size 8 \
-            --num_epochs 15 \
+            --batch_size 16 \
+            --micro_batch_size 1 \
+            --num_epochs 1 \
             --learning_rate 3e-4 \
             --cutoff_len 256 \
             --val_set_size 1 \

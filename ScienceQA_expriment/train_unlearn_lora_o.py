@@ -60,9 +60,9 @@ def train(
         output_dir: str = "./lora_bio_random_test_force_clinc",
         seed: int = 0,
         # training hyperparams
-        batch_size: int = 128,
-        micro_batch_size: int = 8,
-        num_epochs: int = 10,
+        batch_size: int = 16,
+        micro_batch_size: int = 1,
+        num_epochs: int = 1,
         learning_rate: float = 3e-4,
         cutoff_len: int = 256,
         val_set_size: int = 1,
