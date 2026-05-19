@@ -193,6 +193,10 @@ def main():
     parser.add_argument('--ood_setting_name', type=str, default="scienceqa",
                         help='ood setting name')
     parser.add_argument('--seed', type=int, default=1, help='base_model')
+    parser.add_argument('--restore_tasks', nargs='*', default=[],
+                        help='OOD task indices or names to skip for relearning, e.g. 0 biology')
+    parser.add_argument('--output_file', type=str, default=None,
+                        help='Optional explicit result json path')
     # Parsing arguments
     args = parser.parse_args()
     set_seed(args.seed)
@@ -205,6 +209,14 @@ def main():
     for i in types:
         if len(i) > 0:
             ood_types.append(i)
+    restore_task_ids = set()
+    restore_task_names = set()
+    for task in args.restore_tasks:
+        task = str(task)
+        if task.isdigit():
+            restore_task_ids.add(int(task))
+        else:
+            restore_task_names.add(task)
     ood_setting = args.ood_setting
     ood_setting_names = args.ood_setting_name
     print(args.test_dataset)
@@ -214,6 +226,7 @@ def main():
     print(ood_types)
     print(ood_setting)
     print(args.ood_setting_name)
+    print("restore_tasks:", args.restore_tasks)
 
     ood_weights = []
     for i in ood_types:  # "biology", "physics", "chemistry"
@@ -221,11 +234,17 @@ def main():
         ood_weights.append(o_p)
     ood_type = "ocsvm"
 
-    path = "/".join(lora_weight.split("/")[:-1])
-    if not os.path.exists(path):
-        os.mkdir(path)
-    result_file = path + "/test_noretain_{}_seed{}_oodlora_{}_{}".format(ood_setting,str(args.seed), lora_weight.split("/")[-1],
-                                                args.test_dataset.split("/")[-1])
+    if args.output_file:
+        result_file = args.output_file
+        output_dir = os.path.dirname(result_file)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+    else:
+        path = "/".join(lora_weight.split("/")[:-1])
+        if not os.path.exists(path):
+            os.mkdir(path)
+        result_file = path + "/test_noretain_{}_seed{}_oodlora_{}_{}".format(ood_setting,str(args.seed), lora_weight.split("/")[-1],
+                                                    args.test_dataset.split("/")[-1])
     print(result_file)
 
 
@@ -337,12 +356,18 @@ def main():
         ood_input = ood_tokenizer(prompts, padding='max_length', truncation=True, max_length=512, return_tensors="pt") # 256
         max_ood = 0
 
-        for i in range((len(ood_weights))):
+        max_ood_source = None
+        skipped_tasks = []
+        for i, task_name in enumerate(ood_types):
+            if i in restore_task_ids or task_name in restore_task_names:
+                skipped_tasks.append(task_name)
+                continue
             mah_score = ood_models[i].get_unsup_Mah_score_s(ood_input, ood_mean_lists[i], ood_precision_lists[i], ood_fea_lists[i])[:, 1:]
             test_score = ood_clrs[i].score_samples(mah_score)
             w_ood = obtain_weights(test_score, ood_gmm_w_cls[i], ood_x0[i])
             if w_ood > max_ood:
                 max_ood = w_ood
+                max_ood_source = task_name
 
         all_w_res.append(max_ood)
         dic_key = str(max_ood)[:5]
@@ -351,7 +376,9 @@ def main():
         else:
             all_w_res_dic[dic_key] = 1
 
-        print("ood_weight: ", [1, max_ood])
+        if skipped_tasks:
+            print("skipped restore tasks:", skipped_tasks)
+        print("ood_weight: ", [1, max_ood], "source:", max_ood_source)
         model.init_oodweight(ood_weight=[1, max_ood])
 
 
