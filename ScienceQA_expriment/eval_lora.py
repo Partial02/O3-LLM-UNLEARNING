@@ -108,7 +108,7 @@ def main():
 
     ## revised: 단일 biology 및 4종을 모두 받을 수 있도록 리스트 처리
     # parser.add_argument('--test_dataset', type=str, default="./data/scienceqa_RD_5/scienceqa_not_biology_test_RD.json",
-                        help='test_dataset')
+    #                     help='test_dataset')
     parser.add_argument('--test_dataset', nargs='+', default=["./data/scienceqa_RD_5/scienceqa_not_biology_test_RD.json"], help='test_dataset')
     parser.add_argument('--base_model', type=str, default="./llama2_qaall", help='base_model')
     # ./lora_bio_random_test_force_retain ./lora_bio_random_test_k_l
