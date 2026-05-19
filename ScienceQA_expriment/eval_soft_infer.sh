@@ -2,7 +2,7 @@ BASE_MODEL="gcyzsl/O3_LLAMA2_ScienceQA"
 OOD_SETTING="C"
 for SCALE in 0.1
 do
-  for SEED in 0 1 2
+  for SEED in 0
   do
     for LABEL_K in "force"
     do

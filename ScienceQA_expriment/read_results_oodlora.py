@@ -8,7 +8,7 @@ sheet = writer.book.add_worksheet(sheet_name)
 
 row = 0 #
 for LABEL_K in ["force"]:
-    for SEED in [0, 1 ,2]:
+    for SEED in [0]:
         OUTPUT_1 = f"./SCALE_{SCALE}_seed_{SEED}_o_unlearn_lora_{LABEL_K}_checkpoints_5/test_noretain_C_seed{SEED}_oodlora_lora_{LABEL_K}_random"
         TYPE=""
         results = []
