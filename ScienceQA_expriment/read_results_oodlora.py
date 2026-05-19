@@ -12,7 +12,7 @@ for LABEL_K in ["force"]:
         OUTPUT_1 = f"./SCALE_{SCALE}_seed_{SEED}_o_unlearn_lora_{LABEL_K}_checkpoints_5/test_noretain_C_seed{SEED}_oodlora_lora_{LABEL_K}_random"
         TYPE=""
         results = []
-        for UNLEAN_D in ["biology", "physics", "chemistry"]:
+        for UNLEAN_D in ["biology"]:
             OUTPUT_1 += f"_{UNLEAN_D}_{LABEL_K}"
             TYPE += f"_{UNLEAN_D}"
 

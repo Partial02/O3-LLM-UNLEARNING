@@ -1,7 +1,7 @@
 for SEED in 0
 do
   TYPE=""
-  for UNLEAN_D in "biology" "physics" "chemistry"
+  for UNLEAN_D in "biology"
   do
       TYPE+="_${UNLEAN_D}"
       OODPATH_1="./data/scienceqa_RD_5/scienceqa_not${TYPE}"

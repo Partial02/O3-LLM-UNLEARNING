@@ -9,7 +9,7 @@ do
      LORA_W=""
      ADAPTER=""
      TYPE=""
-     for UNLEAN_D in "biology" "physics" "chemistry" "economics" "earth-science"
+     for UNLEAN_D in "biology"
      do
        DATAPATH_1="./data/scienceqa_random_${LABEL_K}_5/scienceqa_${UNLEAN_D}_train_random_${LABEL_K}.json"
        OUTPUT_1+="_${UNLEAN_D}_${LABEL_K}"

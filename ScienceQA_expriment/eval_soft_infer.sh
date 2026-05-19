@@ -8,7 +8,7 @@ do
     do
       OUTPUT_1="./SCALE_${SCALE}_seed_${SEED}_o_unlearn_lora_${LABEL_K}_checkpoints_5/lora_${LABEL_K}_random"
       TYPE=""
-      for UNLEAN_D in "biology" "physics" "chemistry"
+      for UNLEAN_D in "biology"
       do
 
         OUTPUT_1+="_${UNLEAN_D}_${LABEL_K}"
