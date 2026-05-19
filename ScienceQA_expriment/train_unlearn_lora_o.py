@@ -61,7 +61,7 @@ def train(
         seed: int = 0,
         # training hyperparams
         batch_size: int = 128,
-        micro_batch_size: int = 8,
+        micro_batch_size: int = 2, ## revised: 메모리 부족으로 8 -> 2
         num_epochs: int = 10,
         learning_rate: float = 3e-4,
         cutoff_len: int = 256,
@@ -87,7 +87,7 @@ def train(
         train_on_inputs: bool = True,  # if False, masks out inputs in loss
         add_eos_token: bool = True,
         group_by_length: bool = True,  # faster, but produces an odd training loss curve
-        load_in_8bit: bool = True, # 자꾸 메모리가 터져서 켜야할 듯
+        load_in_8bit: bool = False, # 자꾸 메모리가 터져서 켜야할 듯
 
         # wandb params
         wandb_project: str = "",
