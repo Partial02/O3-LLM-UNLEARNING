@@ -136,7 +136,8 @@ def main():
     ## revised: 테스트셋을 하나밖에 못 받는 기존 코드는 주석 처리
     # data_a = json.load(open(args.test_dataset))
     base_model = args.base_model
-    lora_weights = args.lora_weights
+    # lora_weights = args.lora_weights
+    lora_weights = os.path.abspath(args.lora_weights) # 경로 오인을 막기 위해 절대 경로로 처리
     max_batch_size = args.max_batch_size
 
     print(args.test_dataset)
