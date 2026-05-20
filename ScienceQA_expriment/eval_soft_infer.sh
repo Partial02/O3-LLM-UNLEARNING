@@ -40,7 +40,8 @@ do
           --lora_weights ${OUTPUT_1} \
           --ood_type "${OOD_TYPES[@]}" \
           --ood_setting ${OOD_SETTING} \
-          --ood_weights "./ood_checkpoints_scienceqa_${SEED}/"
+          --ood_weights "./ood_checkpoints_scienceqa_${SEED}/" \
+          --restore_tasks 0
 
         TESTPATH_1="./data/scienceqa_SD_5/scienceqa${TYPE}_test_SD.json"
         python eval_o3.py \
@@ -50,7 +51,8 @@ do
           --lora_weights ${OUTPUT_1} \
           --ood_type "${OOD_TYPES[@]}" \
           --ood_setting ${OOD_SETTING} \
-          --ood_weights "./ood_checkpoints_scienceqa_${SEED}/"
+          --ood_weights "./ood_checkpoints_scienceqa_${SEED}/" \
+          --restore_tasks 0
 
         TESTPATH_1="./data/commonqa/commonqa_test.json"
         python eval_o3.py \
