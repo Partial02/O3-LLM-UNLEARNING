@@ -1,4 +1,5 @@
-for SEED in 0 1 2
+# for SEED in 0 1 2
+for SEED in 0
 do
   TYPE=""
   # for UNLEAN_D in "biology" "physics" "chemistry" "economics"

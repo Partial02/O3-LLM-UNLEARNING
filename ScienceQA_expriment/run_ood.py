@@ -132,24 +132,25 @@ def train(args, model, train_dataset, test_dataset, benchmarks, save_name):
                     if not os.path.exists(ood_path):
                         os.mkdir(ood_path)
 
-                    torch.save(mean_list, f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_mean_list_ocsvm.pt")
-                    torch.save(precision_list, f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_precision_list_ocsvm.pt")
-                    torch.save(fea_list, f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_fea_list_ocsvm.pt")
+                    ## nargs='+' 로 받은 리스트를 "_" 로 join해서 파일명에 사용
+                    ## (단일 과목인 경우에도 동일하게 동작)
+                    unlearn_name = "_".join(args.unlearn_dataset) if isinstance(args.unlearn_dataset, list) else args.unlearn_dataset
+                    ood_name = "_".join(args.ood_dataset) if isinstance(args.ood_dataset, list) else args.ood_dataset
 
-                    with open(f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_gmm_w_ocsvm.pkl", "wb") as output_file:
+                    torch.save(mean_list, f"{ood_path}/{unlearn_name}_{ood_name}_mean_list_ocsvm.pt")
+                    torch.save(precision_list, f"{ood_path}/{unlearn_name}_{ood_name}_precision_list_ocsvm.pt")
+                    torch.save(fea_list, f"{ood_path}/{unlearn_name}_{ood_name}_fea_list_ocsvm.pt")
+
+                    with open(f"{ood_path}/{unlearn_name}_{ood_name}_gmm_w_ocsvm.pkl", "wb") as output_file:
                         pickle.dump(gmm_w, output_file)
-                    with open(f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_ocsvm.pkl", "wb") as output_file:
+                    with open(f"{ood_path}/{unlearn_name}_{ood_name}_ocsvm.pkl", "wb") as output_file:
                         pickle.dump(c_lr, output_file)
-                    with open(f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_threshold_ocsvm.json", 'w') as f:
+                    with open(f"{ood_path}/{unlearn_name}_{ood_name}_threshold_ocsvm.json", 'w') as f:
                         json.dump([x0, threshold, acc], f)
                     print("SAVE", "CURRENT BEST ACC: ", acc)
                     acc_global = acc
 
-                    ## revised: 리스트로 받는 문자열을 올바르게 문자열로 처리하도록 하는 안전장치
-                    unlearn_name = "_".join(args.unlearn_dataset) if isinstance(args.unlearn_dataset, list) else args.unlearn_dataset
-                    ood_name = "_".join(args.ood_dataset) if isinstance(args.ood_dataset, list) else args.ood_dataset
                     model.roberta.save_pretrained(f"{ood_path}/{unlearn_name}_{ood_name}_roberta_ocsvm")
-                    # model.roberta.save_pretrained(f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_roberta_ocsvm")
 
                 return acc_global
 
