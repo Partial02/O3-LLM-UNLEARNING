@@ -8,12 +8,14 @@ sheet = writer.book.add_worksheet(sheet_name)
 
 row = 0 #
 for LABEL_K in ["force"]:
-    for SEED in [0, 1 ,2]:
+    # for SEED in [0, 1, 2]:
+    for SEED in [0]:
         OUTPUT_1 = f"./SCALE_{SCALE}_seed_{SEED}_o_unlearn_lora_{LABEL_K}_checkpoints_5/test_noretain_C_seed{SEED}_oodlora_lora_{LABEL_K}_random"
         TYPE=""
         results = []
-        ## revised: 경제학 추가
-        for UNLEAN_D in ["biology", "physics", "chemistry", "economics"]:
+        ## revised: biology 단일 (4종 모두 읽으려면 아래 주석 해제)
+        for UNLEAN_D in ["biology"]:
+        # for UNLEAN_D in ["biology", "physics", "chemistry", "economics"]:
             OUTPUT_1 += f"_{UNLEAN_D}_{LABEL_K}"
             TYPE += f"_{UNLEAN_D}"
 

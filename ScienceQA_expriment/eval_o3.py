@@ -322,10 +322,11 @@ def main():
         ## Fix A: data_a 로드를 루프 안으로 이동
         data_a = json.load(open(test_file, 'r', encoding='utf-8'))
 
-        result_file = path + "/test_noretain_{}_seed{}_oodtype_{}_lora_{}_{}".format(
+        restore_tag = ("_restore" + "_".join(map(str, args.restore_tasks))) if args.restore_tasks else ""
+        result_file = path + "/test_noretain_{}_seed{}_oodlora{}_{}_{}".format(
             ood_setting,
             str(args.seed),
-            ood_type_str,
+            restore_tag,
             base_lora.split("/")[-1],
             test_file.split("/")[-1],
         )

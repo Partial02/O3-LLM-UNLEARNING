@@ -26,7 +26,7 @@ do
             --output_dir ${OUTPUT_1} \
             --seed ${SEED} \
             --batch_size 128 \
-            --micro_batch_size 8 \
+            --micro_batch_size 2 \
             --num_epochs 15 \
             --learning_rate 3e-4 \
             --cutoff_len 256 \
