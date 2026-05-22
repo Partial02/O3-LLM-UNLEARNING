@@ -14,8 +14,8 @@ for LABEL_K in ["force"]:
         TYPE=""
         results = []
         ## revised: biology 단일 (4종 모두 읽으려면 아래 주석 해제)
-        for UNLEAN_D in ["biology"]:
-        # for UNLEAN_D in ["biology", "physics", "chemistry", "economics"]:
+        # for UNLEAN_D in ["biology"]:
+        for UNLEAN_D in ["biology", "physics", "chemistry", "economics"]:
             OUTPUT_1 += f"_{UNLEAN_D}_{LABEL_K}"
             TYPE += f"_{UNLEAN_D}"
 

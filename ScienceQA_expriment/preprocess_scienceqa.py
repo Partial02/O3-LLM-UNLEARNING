@@ -141,7 +141,7 @@ def create_one_example(format, question, context, choice, answer, lecture, solut
 datasets_scienceqa = load_dataset('derek-thomas/ScienceQA')
 
 datasets_wo_text_scienceqa = {'train': [], 'validation': [], 'test': []}
-topics = ['biology', 'physics', 'chemistry']
+topics = ['biology', 'physics', 'chemistry', 'economics']
 splits = ['test', 'validation', 'train']
 
 options = ["A", "B", "C", "D", "E"]

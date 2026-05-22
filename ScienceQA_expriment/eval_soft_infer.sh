@@ -13,10 +13,10 @@ do
 
       ## relearn할 과목 인덱스 (0=biology 1=physics 2=chemistry 3=economics)
       ## biology(0)는 unlearn 유지 → 0 제외
-      RESTORE_TASKS="1 3"    ## physics + economics relearn
+      # RESTORE_TASKS="1 3"    ## physics + economics relearn
       # RESTORE_TASKS="1"    ## physics만 relearn (단독 실행 시)
       # RESTORE_TASKS="3"    ## economics만 relearn (단독 실행 시)
-      # RESTORE_TASKS=""     ## 전부 unlearn 유지
+      RESTORE_TASKS=""     ## 전부 unlearn 유지
 
       ## biology 단일 망각 (default)
       # DATASETS=("biology")
@@ -38,6 +38,7 @@ do
           --lora_weights ${OUTPUT_1} \
           --ood_type "${OOD_TYPES[@]}" \
           --ood_setting ${OOD_SETTING} \
+          --restore_tasks ${RESTORE_TASKS} \
           --ood_weights "./ood_checkpoints_scienceqa_${SEED}/"
 
         ## SD_train: unlearn 과목 문제 → OOD 게이트 활성, restore_tasks 필요
@@ -73,6 +74,7 @@ do
           --lora_weights ${OUTPUT_1} \
           --ood_type "${OOD_TYPES[@]}" \
           --ood_setting ${OOD_SETTING} \
+          --restore_tasks ${RESTORE_TASKS} \
           --ood_weights "./ood_checkpoints_scienceqa_${SEED}/"
 
         TESTPATH_1="./data/openbookqa/openbookqa_test.json"
@@ -83,6 +85,7 @@ do
           --lora_weights ${OUTPUT_1} \
           --ood_type "${OOD_TYPES[@]}" \
           --ood_setting ${OOD_SETTING} \
+          --restore_tasks ${RESTORE_TASKS} \
           --ood_weights "./ood_checkpoints_scienceqa_${SEED}/"
       done
     done
