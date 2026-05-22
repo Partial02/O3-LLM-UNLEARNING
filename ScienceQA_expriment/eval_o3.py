@@ -193,10 +193,12 @@ def main():
     parser.add_argument('--ood_setting_name', type=str, default="scienceqa",
                         help='ood setting name')
     parser.add_argument('--seed', type=int, default=1, help='base_model')
-    parser.add_argument('--restore_tasks', nargs='*', default=[],
-                        help='OOD task indices or names to skip for relearning, e.g. 0 biology')
     parser.add_argument('--output_file', type=str, default=None,
-                        help='Optional explicit result json path')
+                        help='optional path to save evaluation results')
+    parser.add_argument('--restore_tasks', nargs='*', default=[],
+                        help='task names or indices to restore with boundary shift')
+    parser.add_argument('--restore_delta_scale', type=float, default=1.0,
+                        help='scale for task-specific boundary-distance shift')
     # Parsing arguments
     args = parser.parse_args()
     set_seed(args.seed)
@@ -209,14 +211,22 @@ def main():
     for i in types:
         if len(i) > 0:
             ood_types.append(i)
-    restore_task_ids = set()
+    if args.restore_delta_scale < 0:
+        raise ValueError("--restore_delta_scale must be non-negative")
     restore_task_names = set()
+    restore_task_ids = set()
     for task in args.restore_tasks:
         task = str(task)
         if task.isdigit():
             restore_task_ids.add(int(task))
         else:
             restore_task_names.add(task)
+    unknown_restore_tasks = restore_task_names - set(ood_types)
+    if unknown_restore_tasks:
+        raise ValueError(f"Unknown restore task(s): {sorted(unknown_restore_tasks)}. Available tasks: {ood_types}")
+    invalid_restore_ids = [idx for idx in restore_task_ids if idx < 0 or idx >= len(ood_types)]
+    if invalid_restore_ids:
+        raise ValueError(f"Invalid restore task index(es): {invalid_restore_ids}. Available index range: 0-{len(ood_types) - 1}")
     ood_setting = args.ood_setting
     ood_setting_names = args.ood_setting_name
     print(args.test_dataset)
@@ -227,6 +237,7 @@ def main():
     print(ood_setting)
     print(args.ood_setting_name)
     print("restore_tasks:", args.restore_tasks)
+    print("restore_delta_scale:", args.restore_delta_scale)
 
     ood_weights = []
     for i in ood_types:  # "biology", "physics", "chemistry"
@@ -234,17 +245,16 @@ def main():
         ood_weights.append(o_p)
     ood_type = "ocsvm"
 
+    path = "/".join(lora_weight.split("/")[:-1])
+    if not os.path.exists(path):
+        os.mkdir(path)
+    result_file = path + "/test_noretain_{}_seed{}_oodlora_{}_{}".format(ood_setting,str(args.seed), lora_weight.split("/")[-1],
+                                                args.test_dataset.split("/")[-1])
     if args.output_file:
         result_file = args.output_file
-        output_dir = os.path.dirname(result_file)
-        if output_dir:
-            os.makedirs(output_dir, exist_ok=True)
-    else:
-        path = "/".join(lora_weight.split("/")[:-1])
-        if not os.path.exists(path):
-            os.mkdir(path)
-        result_file = path + "/test_noretain_{}_seed{}_oodlora_{}_{}".format(ood_setting,str(args.seed), lora_weight.split("/")[-1],
-                                                    args.test_dataset.split("/")[-1])
+        result_dir = os.path.dirname(result_file)
+        if result_dir:
+            os.makedirs(result_dir, exist_ok=True)
     print(result_file)
 
 
@@ -356,18 +366,19 @@ def main():
         ood_input = ood_tokenizer(prompts, padding='max_length', truncation=True, max_length=512, return_tensors="pt") # 256
         max_ood = 0
 
-        max_ood_source = None
-        skipped_tasks = []
-        for i, task_name in enumerate(ood_types):
-            if i in restore_task_ids or task_name in restore_task_names:
-                skipped_tasks.append(task_name)
-                continue
+        for i in range((len(ood_weights))):
             mah_score = ood_models[i].get_unsup_Mah_score_s(ood_input, ood_mean_lists[i], ood_precision_lists[i], ood_fea_lists[i])[:, 1:]
             test_score = ood_clrs[i].score_samples(mah_score)
+            if i in restore_task_ids or ood_types[i] in restore_task_names:
+                center = ood_x0[i]
+                radius_proxy = abs(ood_x0[i] - ood_thresholds[i])
+                delta = args.restore_delta_scale * radius_proxy
+                direction = np.sign(test_score - center)
+                direction = np.where(direction == 0, 1, direction)
+                test_score = center + direction * (np.abs(test_score - center) + delta)
             w_ood = obtain_weights(test_score, ood_gmm_w_cls[i], ood_x0[i])
             if w_ood > max_ood:
                 max_ood = w_ood
-                max_ood_source = task_name
 
         all_w_res.append(max_ood)
         dic_key = str(max_ood)[:5]
@@ -376,9 +387,7 @@ def main():
         else:
             all_w_res_dic[dic_key] = 1
 
-        if skipped_tasks:
-            print("skipped restore tasks:", skipped_tasks)
-        print("ood_weight: ", [1, max_ood], "source:", max_ood_source)
+        print("ood_weight: ", [1, max_ood])
         model.init_oodweight(ood_weight=[1, max_ood])
 
 
