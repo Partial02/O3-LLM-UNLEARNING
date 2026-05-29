@@ -3,6 +3,7 @@ import torch
 from tqdm import tqdm
 import numpy as np
 from torch.utils.data import DataLoader
+from torch.utils.data import ConcatDataset ## revised
 from transformers import RobertaConfig, RobertaTokenizer, BertConfig, BertTokenizer
 from transformers.optimization import AdamW, get_linear_schedule_with_warmup
 from src.ood_utils import set_seed, collate_fn_mlm, collate_fn, detection_performance
@@ -131,19 +132,25 @@ def train(args, model, train_dataset, test_dataset, benchmarks, save_name):
                     if not os.path.exists(ood_path):
                         os.mkdir(ood_path)
 
-                    torch.save(mean_list, f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_mean_list_ocsvm.pt")
-                    torch.save(precision_list, f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_precision_list_ocsvm.pt")
-                    torch.save(fea_list, f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_fea_list_ocsvm.pt")
+                    ## nargs='+' 로 받은 리스트를 "_" 로 join해서 파일명에 사용
+                    ## (단일 과목인 경우에도 동일하게 동작)
+                    unlearn_name = "_".join(args.unlearn_dataset) if isinstance(args.unlearn_dataset, list) else args.unlearn_dataset
+                    ood_name = "_".join(args.ood_dataset) if isinstance(args.ood_dataset, list) else args.ood_dataset
 
-                    with open(f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_gmm_w_ocsvm.pkl", "wb") as output_file:
+                    torch.save(mean_list, f"{ood_path}/{unlearn_name}_{ood_name}_mean_list_ocsvm.pt")
+                    torch.save(precision_list, f"{ood_path}/{unlearn_name}_{ood_name}_precision_list_ocsvm.pt")
+                    torch.save(fea_list, f"{ood_path}/{unlearn_name}_{ood_name}_fea_list_ocsvm.pt")
+
+                    with open(f"{ood_path}/{unlearn_name}_{ood_name}_gmm_w_ocsvm.pkl", "wb") as output_file:
                         pickle.dump(gmm_w, output_file)
-                    with open(f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_ocsvm.pkl", "wb") as output_file:
+                    with open(f"{ood_path}/{unlearn_name}_{ood_name}_ocsvm.pkl", "wb") as output_file:
                         pickle.dump(c_lr, output_file)
-                    with open(f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_threshold_ocsvm.json", 'w') as f:
+                    with open(f"{ood_path}/{unlearn_name}_{ood_name}_threshold_ocsvm.json", 'w') as f:
                         json.dump([x0, threshold, acc], f)
                     print("SAVE", "CURRENT BEST ACC: ", acc)
                     acc_global = acc
-                    model.roberta.save_pretrained(f"{ood_path}/{args.unlearn_dataset}_{args.ood_dataset}_roberta_ocsvm")
+
+                    model.roberta.save_pretrained(f"{ood_path}/{unlearn_name}_{ood_name}_roberta_ocsvm")
 
                 return acc_global
 
@@ -236,8 +243,12 @@ def main():
     parser.add_argument("--loss", type=str, default="margin")
     parser.add_argument("--ood", type=str, default="ocsvm") # gmm ocsvm
 
-    parser.add_argument("--unlearn_dataset", default="biology", type=str)
-    parser.add_argument("--ood_dataset", type=str, default="ood_scienceqa")
+    # parser.add_argument("--unlearn_dataset", default="biology", type=str)
+    # parser.add_argument("--ood_dataset", type=str, default="ood_scienceqa")
+    ## revised: unlearn할 데이터셋 여러 개를 리스트로 동적 처리하도록 개선
+    parser.add_argument("--unlearn_dataset", nargs='+', default=["biology"], help="list to unlearn")
+    parser.add_argument("--ood_dataset", nargs='+', default=["ood_scienceqa"], help="list of OOD benchmarks")
+    
     parser.add_argument("--base_unlearn_path", type=str, default="./data/scienceqa/")
     parser.add_argument("--base_ood_path", type=str, default="./data/scienceqa_RD_5/")
     parser.add_argument("--save_name", type=str, default="scienceqa")
@@ -259,12 +270,36 @@ def main():
     datasets = [args.unlearn_dataset, args.ood_dataset]
     benchmarks = ()
 
-    for dataset in datasets:
-        if dataset == args.unlearn_dataset:
-            train_dataset, test_dataset = load(dataset, tokenizer, max_seq_length=args.max_seq_length, is_id=True, base_unlearn_path=args.base_unlearn_path, base_ood_path=args.base_ood_path)  # biology
-        elif dataset == args.ood_dataset:
-            _, original_val_dataset = load(dataset, tokenizer, max_seq_length=args.max_seq_length, is_id=True, base_unlearn_path=args.base_unlearn_path, base_ood_path=args.base_ood_path)  # non biology
-            benchmarks = ((dataset, original_val_dataset),) + benchmarks
+    # for dataset in datasets:
+    #     if dataset == args.unlearn_dataset:
+    #         train_dataset, test_dataset = load(dataset, tokenizer, max_seq_length=args.max_seq_length, is_id=True, base_unlearn_path=args.base_unlearn_path, base_ood_path=args.base_ood_path)  # biology
+    #     elif dataset == args.ood_dataset:
+    #         _, original_val_dataset = load(dataset, tokenizer, max_seq_length=args.max_seq_length, is_id=True, base_unlearn_path=args.base_unlearn_path, base_ood_path=args.base_ood_path)  # non biology
+    #         benchmarks = ((dataset, original_val_dataset),) + benchmarks
+    # train(args, model, train_dataset, test_dataset, benchmarks, save_name=args.save_name)
+
+    ## revised: unlearn할 데이터셋 여러 개를 리스트로 동적 처리하도록 개선
+    train_datasets = []
+    test_datasets = []
+    
+    for dataset in args.unlearn_dataset:
+        train_d, test_d = load(
+            dataset, tokenizer, max_seq_length=args.max_seq_length, 
+            is_id=True, base_unlearn_path=args.base_unlearn_path, base_ood_path=args.base_ood_path
+        )
+        train_datasets.append(train_d)
+        test_datasets.append(test_d)
+    train_dataset = ConcatDataset(train_datasets) if len(train_datasets) > 1 else train_datasets[0]
+    test_dataset = ConcatDataset(test_datasets) if len(test_datasets) > 1 else test_datasets[0]
+    
+    benchmarks = ()
+    for dataset in args.ood_dataset:
+        _, original_val_dataset = load(
+            dataset, tokenizer, max_seq_length=args.max_seq_length, 
+            is_id=False, base_unlearn_path=args.base_unlearn_path, base_ood_path=args.base_ood_path
+        )
+        benchmarks = ((dataset, original_val_dataset),) + benchmarks
+    
     train(args, model, train_dataset, test_dataset, benchmarks, save_name=args.save_name)
 
 

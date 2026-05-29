@@ -280,14 +280,25 @@ class LoraModel(BaseTuner):
 
         # avoid eager bnb import
         if is_bnb_available():
-            from .bnb import dispatch_bnb_8bit
+	    ## revised: .bnb 폴더가 없어도 에러가 안 나도록 감싸줌
+            # from .bnb import dispatch_bnb_8bit
+            try:
+                from .bnb import dispatch_bnb_8bit
+            except ImportError:
+                dispatch_bnb_8bit = None
 
-            dispatchers.append(dispatch_bnb_8bit)
+            if dispatch_bnb_8bit is not None:
+                dispatchers.append(dispatch_bnb_8bit)
 
         if is_bnb_4bit_available():
-            from .bnb import dispatch_bnb_4bit
+            # from .bnb import dispatch_bnb_4bit
+            try:
+                from .bnb import dispatch_bnb_4bit
+            except ImportError:
+                dispatch_bnb_4bit = None
 
-            dispatchers.append(dispatch_bnb_4bit)
+            if dispatch_bnb_4bit is not None:
+                dispatchers.append(dispatch_bnb_4bit)
 
         dispatchers.extend([dispatch_aqlm, dispatch_awq, dispatch_gptq, dispatch_megatron, dispatch_default])
 

@@ -1,6 +1,7 @@
 BASE_MODEL="gcyzsl/O3_LLAMA2_ScienceQA"
 for SCALE in 0.1
 do
+ # for SEED in 0 1 2
  for SEED in 0
  do
    for LABEL_K in "force"
@@ -9,7 +10,13 @@ do
      LORA_W=""
      ADAPTER=""
      TYPE=""
-     for UNLEAN_D in "biology"
+     
+     ## revised: 생물학 only v.s. 4종을 모두 받을 수 있도록 주석으로 처리
+     DATASETS=("biology")
+     # DATASETS=("biology" "physics" "chemistry" "economics")
+     
+     # for UNLEAN_D in "biology" "physics" "chemistry" "economics" "earth-science"
+     for UNLEAN_D in "${DATASETS[@]}"
      do
        echo "[DEBUG] STAGE=LORA-UNLEARN | SEED=${SEED} | DOMAIN=${UNLEAN_D}"
        DATAPATH_1="./data/scienceqa_random_${LABEL_K}_5/scienceqa_${UNLEAN_D}_train_random_${LABEL_K}.json"
@@ -19,9 +26,9 @@ do
             --data_path ${DATAPATH_1} \
             --output_dir ${OUTPUT_1} \
             --seed ${SEED} \
-            --batch_size 16 \
-            --micro_batch_size 1 \
-            --num_epochs 1 \
+            --batch_size 128 \
+            --micro_batch_size 2 \
+            --num_epochs 15 \
             --learning_rate 3e-4 \
             --cutoff_len 256 \
             --val_set_size 1 \

@@ -1,7 +1,12 @@
 for SEED in 0
 do
   TYPE=""
-  for UNLEAN_D in "biology"
+  ## revised: 생물학 only v.s. 4종을 모두 받을 수 있도록 주석으로 처리
+  DATASETS=("biology")
+  # DATASETS=("biology" "physics" "chemistry" "economics")
+     
+  # for UNLEAN_D in "biology" "physics" "chemistry"
+  for UNLEAN_D in "${DATASETS[@]}"
   do
       echo "[DEBUG] STAGE=OOD-RUN | SEED=${SEED} | DOMAIN=${UNLEAN_D}"
       TYPE+="_${UNLEAN_D}"
