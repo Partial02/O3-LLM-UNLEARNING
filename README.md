@@ -11,7 +11,7 @@ Our baseline model is O3 framework, which is explained beneath this paragraph.
 We do our experiment over ScienceQA dataset.
 we will upload our paper in arxiv shortly. If submission is completed, then we will notice it here soon.
 
-<img src="Selectivity.png" width="800">
+<img src="Selectivity.png" width="700">
 
 
 ## On Large Language Model Continual Unlearning
