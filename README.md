@@ -1,11 +1,11 @@
 # Knowledge On-Off Switch: Flexible Unlearning and Relearning with O3 Framework
 
-This repo covers knowledge switch for selective unlearning & relearning LLM,
-made for final project in 'Natural Langauge Process(261R0136COSE34102)' class by Byeongjun Lee
-
 <p align="center">
 <img src="switch.png" width="600" align="center">
 </p>
+
+This repo covers knowledge switch for selective unlearning & relearning LLM,
+made for final project in 'Natural Langauge Process(261R0136COSE34102)' class by Byeongjun Lee
 
 Our baseline model is O3 framework, which is explained beneath this paragraph.
 We do our experiment over ScienceQA dataset.
