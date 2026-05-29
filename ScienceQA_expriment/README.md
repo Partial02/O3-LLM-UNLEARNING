@@ -1,4 +1,7 @@
-The experiment on ScienceQA dataset.
+This experiment is done on ScienceQA dataset.
+
+Followings are experimental representation steps, but you can skip and jump to step 6 using tar file.
+
 
 ## 1) Installation
 You can install the required dependencies using the following command:
@@ -61,6 +64,8 @@ bash ./train_unlearn_lora.sh
 ```
 
 ## 6) Soft-weighted inference
+If you want to skip 1-5 steps, you can download the tar file from [this link](https://naver.me/GhwSNDUO).
+
 To run the experiments, you can use the following command:
 ```
 bash eval_soft_infer.sh
@@ -68,5 +73,6 @@ bash eval_soft_infer.sh
 To gather the final results:
 ```
 python read_results_oodlora.py
+python read_results_per_subject.py
 ```
 
