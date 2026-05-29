@@ -1,7 +1,7 @@
 # Knowledge On-Off Switch: Flexible Unlearning and Relearning with O3 Framework
 
 <p align="center">
-<img src="switch.png" width="600" align="center">
+<img src="switch.png" width="700" align="center">
 </p>
 
 This repo covers knowledge switch for selective unlearning & relearning LLM,
@@ -11,8 +11,9 @@ Our baseline model is O3 framework, which is explained beneath this paragraph.
 We do our experiment over ScienceQA dataset.
 we will upload our paper in arxiv shortly. If submission is completed, then we will notice it here soon.
 
-<img src="Selectivity.png" width="800">
-
+<p align="center">
+<img src="selectivity.png" width="700">
+</p>
 
 ## On Large Language Model Continual Unlearning
 
