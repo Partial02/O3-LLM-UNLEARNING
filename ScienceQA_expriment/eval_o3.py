@@ -189,44 +189,72 @@ def main():
                         help='ood setting')
     parser.add_argument('--ood_setting_name', type=str, default="scienceqa",
                         help='ood setting name')
-    parser.add_argument('--seed', type=int, default=1, help='seed')
-
+    parser.add_argument('--seed', type=int, default=1, help='base_model')
+    parser.add_argument('--output_file', type=str, default=None,
+                        help='optional path to save evaluation results')
+    parser.add_argument('--restore_tasks', nargs='*', default=[],
+                        help='task names or indices to restore with boundary shift')
+    parser.add_argument('--restore_delta_scale', type=float, default=1.0,
+                        help='scale for task-specific boundary-distance shift')
+    # Parsing arguments
     args = parser.parse_args()
     set_seed(args.seed)
 
     base_model = args.base_model
     max_batch_size = 1
-
-    ## Fix B: args.ood_type은 이미 리스트 → 빈 문자열만 필터링
-    ood_types = [t for t in args.ood_type if len(t) > 0]
-
+    lora_weight = args.lora_weights
+    types = args.ood_type.split("_")
+    ood_types = []
+    for i in types:
+        if len(i) > 0:
+            ood_types.append(i)
+    if args.restore_delta_scale < 0:
+        raise ValueError("--restore_delta_scale must be non-negative")
+    restore_task_names = set()
+    restore_task_ids = set()
+    for task in args.restore_tasks:
+        task = str(task)
+        if task.isdigit():
+            restore_task_ids.add(int(task))
+        else:
+            restore_task_names.add(task)
+    unknown_restore_tasks = restore_task_names - set(ood_types)
+    if unknown_restore_tasks:
+        raise ValueError(f"Unknown restore task(s): {sorted(unknown_restore_tasks)}. Available tasks: {ood_types}")
+    invalid_restore_ids = [idx for idx in restore_task_ids if idx < 0 or idx >= len(ood_types)]
+    if invalid_restore_ids:
+        raise ValueError(f"Invalid restore task index(es): {invalid_restore_ids}. Available index range: 0-{len(ood_types) - 1}")
     ood_setting = args.ood_setting
     ood_setting_names = args.ood_setting_name
+    print(args.test_dataset)
+    print(args.base_model)
+    print(args.lora_weights)
+    print(args.ood_weights)
+    print(ood_types)
+    print(ood_setting)
+    print(args.ood_setting_name)
+    print("restore_tasks:", args.restore_tasks)
+    print("restore_delta_scale:", args.restore_delta_scale)
 
-    print("test_dataset  :", args.test_dataset)
-    print("base_model    :", args.base_model)
-    print("lora_weights  :", args.lora_weights)
-    print("ood_weights   :", args.ood_weights)
-    print("ood_types     :", ood_types)
-    print("ood_setting   :", ood_setting)
-    print("ood_setting_name:", args.ood_setting_name)
-    print("restore_tasks :", args.restore_tasks)
-
-    ## 각 과목별 OOD 체크포인트 기본 경로 구성
-    ood_weight_paths = []
-    for topic in ood_types:
-        o_p = args.ood_weights + f"{ood_setting_names}_{topic}_ood_{ood_setting_names}"
-        ood_weight_paths.append(o_p)
-
-    ## OOD 파일 suffix: train_ood.py / run_ood.py 가 저장하는 방식과 동일하게 "ocsvm"
-    ood_method = "ocsvm"
+    ood_weights = []
+    for i in ood_types:  # "biology", "physics", "chemistry"
+        o_p = args.ood_weights + f"{ood_setting_names}_{i}_ood_{ood_setting_names}"
+        ood_weights.append(o_p)
+    ood_type = "ocsvm"
 
     ## Fix C: lora_weights 리스트의 마지막 경로를 PeftModel 로드에 사용
     base_lora = args.lora_weights[-1] if isinstance(args.lora_weights, list) else args.lora_weights
     path = "/".join(base_lora.split("/")[:-1])
     if not os.path.exists(path):
         os.mkdir(path)
-    ood_type_str = "_".join(ood_types)  ## 결과 파일명용 문자열
+    result_file = path + "/test_noretain_{}_seed{}_oodlora_{}_{}".format(ood_setting,str(args.seed), lora_weight.split("/")[-1],
+                                                args.test_dataset.split("/")[-1])
+    if args.output_file:
+        result_file = args.output_file
+        result_dir = os.path.dirname(result_file)
+        if result_dir:
+            os.makedirs(result_dir, exist_ok=True)
+    print(result_file)
 
     ## ── 모델 로드 (테스트 루프 밖에서 1회) ────────────────────────────
     load_8bit = False
@@ -348,18 +376,19 @@ def main():
             )
             max_ood = 0
 
-            for i in range(len(ood_weight_paths)):
-                if i in args.restore_tasks:
-                    ## restore_tasks에 포함된 과목은 OOD gate를 건너뜀
-                    ## → LoRA 미적용 → 원래 지식 복원 (relearning)
-                    continue
-                mah_score = ood_models[i].get_unsup_Mah_score_s(
-                    ood_input, ood_mean_lists[i], ood_precision_lists[i], ood_fea_lists[i]
-                )[:, 1:]
-                test_score = ood_clrs[i].score_samples(mah_score)
-                w_ood = obtain_weights(test_score, ood_gmm_w_cls[i], ood_x0[i])
-                if w_ood > max_ood:
-                    max_ood = w_ood
+        for i in range((len(ood_weights))):
+            mah_score = ood_models[i].get_unsup_Mah_score_s(ood_input, ood_mean_lists[i], ood_precision_lists[i], ood_fea_lists[i])[:, 1:]
+            test_score = ood_clrs[i].score_samples(mah_score)
+            if i in restore_task_ids or ood_types[i] in restore_task_names:
+                center = ood_x0[i]
+                radius_proxy = abs(ood_x0[i] - ood_thresholds[i])
+                delta = args.restore_delta_scale * radius_proxy
+                direction = np.sign(test_score - center)
+                direction = np.where(direction == 0, 1, direction)
+                test_score = center + direction * (np.abs(test_score - center) + delta)
+            w_ood = obtain_weights(test_score, ood_gmm_w_cls[i], ood_x0[i])
+            if w_ood > max_ood:
+                max_ood = w_ood
 
             all_w_res.append(max_ood)
             all_w_res_dic[str(max_ood)[:5]] = all_w_res_dic.get(str(max_ood)[:5], 0) + 1
