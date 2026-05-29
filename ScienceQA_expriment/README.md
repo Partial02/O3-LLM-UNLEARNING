@@ -1,6 +1,6 @@
 This experiment is done on ScienceQA dataset.
 
-Followings are experimental representation steps, but you can skip and jump to step 6 using tar file.
+Followings are experimental representation steps, but you may jump to the step 6 right away
 
 
 ## 1) Installation
@@ -64,7 +64,7 @@ bash ./train_unlearn_lora.sh
 ```
 
 ## 6) Soft-weighted inference
-If you want to skip 1-5 steps, you can download the tar file from [this link](https://naver.me/GhwSNDUO).
+If you want to skip 1-5 steps, you can download the tar.gz file from [this link](https://naver.me/GhwSNDUO).
 
 To run the experiments, you can use the following command:
 ```
