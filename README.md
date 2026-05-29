@@ -3,6 +3,10 @@
 This repo covers knowledge switch for selective unlearning & relearning LLM,
 made for final project in 'Natural Langauge Process(261R0136COSE34102)' class by Byeongjun Lee
 
+<p align="center">
+<img src="switch.png" width="600" align="center">
+</p>
+
 Our baseline model is O3 framework, which is explained beneath this paragraph.
 We do our experiment over ScienceQA dataset.
 we will upload our paper in arxiv shortly. If submission is completed, then we will notice it here soon.
